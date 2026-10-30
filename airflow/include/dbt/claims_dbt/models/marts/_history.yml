@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: dim_member_history
+    columns:
+      - name: member_key
+        data_tests: [unique, not_null]
+
+  - name: dim_provider_history
+    columns:
+      - name: provider_key
+        data_tests: [unique, not_null]

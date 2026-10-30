@@ -1,0 +1,14 @@
+snapshots:
+  - name: snap_members
+    relation: ref('stg_members')
+    config:
+      unique_key: member_id
+      strategy: timestamp
+      updated_at: last_updated_at
+
+  - name: snap_providers
+    relation: ref('stg_providers')
+    config:
+      unique_key: provider_id
+      strategy: timestamp
+      updated_at: last_updated_at

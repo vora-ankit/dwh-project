@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 790" width="1440" height="790" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/></marker></defs>
+<rect width="1440" height="790" fill="#ffffff"/>
+<text x="24" y="38" font-size="24" font-weight="700" fill="#1f2937" text-anchor="start">Claims data warehouse: architecture</text>
+<text x="24" y="62" font-size="13" font-weight="400" fill="#5b6472" text-anchor="start">All data is synthetic. Everything shown is built and running, except the dashed Consumers box.</text>
+<rect x="296" y="78" width="1120" height="50" rx="10" fill="#FDF2F2" stroke="#C2410C" stroke-width="1.5"/>
+<text x="312" y="100" font-size="14" font-weight="700" fill="#C2410C" text-anchor="start">ORCHESTRATION: Airflow 3.3 (Astro CLI, Docker), DAG claims_pipeline, daily</text>
+<text x="312" y="119" font-size="12.5" font-weight="400" fill="#5b6472" text-anchor="start">extract_rows, then extract_keys, then load_raw (COPY INTO), then dbt_build (snapshots, models, tests); retries; max one active run</text>
+<rect x="24" y="150" width="232" height="520" rx="14" fill="#E8F1FB" stroke="#3B7BC0" stroke-width="1.5"/>
+<text x="40" y="178" font-size="15" font-weight="700" fill="#3B7BC0" text-anchor="start">SOURCE</text>
+<text x="40" y="197" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">Azure SQL Database (serverless)</text>
+<rect x="296" y="150" width="232" height="520" rx="14" fill="#FFF4E0" stroke="#C98A1B" stroke-width="1.5"/>
+<text x="312" y="178" font-size="15" font-weight="700" fill="#C98A1B" text-anchor="start">EXTRACT</text>
+<text x="312" y="197" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">Python scripts, run by Airflow</text>
+<rect x="568" y="150" width="232" height="520" rx="14" fill="#E9F6EC" stroke="#3A9457" stroke-width="1.5"/>
+<text x="584" y="178" font-size="15" font-weight="700" fill="#3A9457" text-anchor="start">LANDING</text>
+<text x="584" y="197" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">Azure Blob Storage, container: raw</text>
+<rect x="840" y="150" width="232" height="520" rx="14" fill="#E3F3FA" stroke="#1F8FB5" stroke-width="1.5"/>
+<text x="856" y="178" font-size="15" font-weight="700" fill="#1F8FB5" text-anchor="start">LOAD</text>
+<text x="856" y="197" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">Snowflake (AWS), schema RAW</text>
+<rect x="1112" y="150" width="304" height="520" rx="14" fill="#F1EAFB" stroke="#7B52C4" stroke-width="1.5"/>
+<text x="1128" y="178" font-size="15" font-weight="700" fill="#7B52C4" text-anchor="start">TRANSFORM</text>
+<text x="1128" y="197" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">dbt Core, runs inside Snowflake</text>
+<rect x="40" y="205" width="200" height="64" rx="9" fill="#ffffff" stroke="#3B7BC0" stroke-width="1.4"/>
+<text x="52" y="227" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">dbo.Claims</text>
+<text x="52" y="246" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">~5,000 rows, ROWVERSION</text>
+<rect x="40" y="281" width="200" height="64" rx="9" fill="#ffffff" stroke="#3B7BC0" stroke-width="1.4"/>
+<text x="52" y="303" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">dbo.Providers</text>
+<text x="52" y="322" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">2,000 rows, ROWVERSION</text>
+<rect x="40" y="357" width="200" height="64" rx="9" fill="#ffffff" stroke="#3B7BC0" stroke-width="1.4"/>
+<text x="52" y="379" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">dbo.Members</text>
+<text x="52" y="398" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">20,000 rows, ROWVERSION</text>
+<rect x="40" y="480" width="200" height="108" rx="9" fill="#ffffff" stroke="#3B7BC0" stroke-width="1.4"/>
+<text x="52" y="502" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">Synthetic generators</text>
+<text x="52" y="521" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">generate_claims.py</text>
+<text x="52" y="538" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">generate_dims.py</text>
+<text x="52" y="555" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">seed, then tick: insert,</text>
+<text x="52" y="572" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">update, delete</text>
+<line x1="140" y1="480" x2="140" y2="424" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="312" y="205" width="200" height="150" rx="9" fill="#ffffff" stroke="#C98A1B" stroke-width="1.4"/>
+<text x="324" y="227" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">extract_tables.py</text>
+<text x="324" y="246" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">rows changed since the</text>
+<text x="324" y="263" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">saved watermark</text>
+<text x="324" y="280" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">upper bound: rowversion &lt;</text>
+<text x="324" y="297" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">MIN_ACTIVE_ROWVERSION()</text>
+<text x="324" y="314" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">writes Parquet in chunks</text>
+<rect x="312" y="385" width="200" height="118" rx="9" fill="#ffffff" stroke="#C98A1B" stroke-width="1.4"/>
+<text x="324" y="407" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">extract_keys.py</text>
+<text x="324" y="426" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">full list of current keys</text>
+<text x="324" y="443" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">runs AFTER the row extract</text>
+<text x="324" y="460" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">refuses an empty list</text>
+<line x1="240" y1="237" x2="312" y2="237" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="240" y1="313" x2="312" y2="300" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="240" y1="389" x2="312" y2="440" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="584" y="205" width="200" height="56" rx="9" fill="#ffffff" stroke="#3A9457" stroke-width="1.4"/>
+<text x="596" y="227" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">claims/</text>
+<text x="596" y="246" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">load_date=.../ Parquet</text>
+<rect x="584" y="273" width="200" height="56" rx="9" fill="#ffffff" stroke="#3A9457" stroke-width="1.4"/>
+<text x="596" y="295" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">providers/</text>
+<text x="596" y="314" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">load_date=.../ Parquet</text>
+<rect x="584" y="341" width="200" height="56" rx="9" fill="#ffffff" stroke="#3A9457" stroke-width="1.4"/>
+<text x="596" y="363" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">members/</text>
+<text x="596" y="382" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">load_date=.../ Parquet</text>
+<rect x="584" y="409" width="200" height="56" rx="9" fill="#ffffff" stroke="#3A9457" stroke-width="1.4"/>
+<text x="596" y="431" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">claims_keys/</text>
+<text x="596" y="450" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">captured_at=.../ Parquet</text>
+<rect x="584" y="495" width="200" height="64" rx="9" fill="#ffffff" stroke="#3A9457" stroke-width="1.4"/>
+<text x="596" y="517" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">_state/</text>
+<text x="596" y="536" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">watermark per table,</text>
+<text x="596" y="553" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">read + written by extract</text>
+<line x1="512" y1="250" x2="584" y2="233" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="512" y1="285" x2="584" y2="301" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="512" y1="320" x2="584" y2="369" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="512" y1="450" x2="584" y2="437" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="512" y1="355" x2="584" y2="520" stroke="#4b5563" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<rect x="856" y="205" width="200" height="88" rx="9" fill="#ffffff" stroke="#1F8FB5" stroke-width="1.4"/>
+<text x="868" y="227" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">Stages + integration</text>
+<text x="868" y="246" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">storage integration, no</text>
+<text x="868" y="263" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">stored keys; one stage per</text>
+<text x="868" y="280" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">folder; logical types on</text>
+<rect x="856" y="313" width="200" height="72" rx="9" fill="#ffffff" stroke="#1F8FB5" stroke-width="1.4"/>
+<text x="868" y="335" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">COPY INTO</text>
+<text x="868" y="354" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">load_raw.sql; skips files</text>
+<text x="868" y="371" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">already loaded</text>
+<rect x="856" y="405" width="200" height="124" rx="9" fill="#ffffff" stroke="#1F8FB5" stroke-width="1.4"/>
+<text x="868" y="427" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">RAW tables</text>
+<text x="868" y="446" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">CLAIMS, PROVIDERS,</text>
+<text x="868" y="463" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">MEMBERS, CLAIM_KEYS</text>
+<text x="868" y="480" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">append-only: every version</text>
+<text x="868" y="497" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">kept, plus _SOURCE_FILE</text>
+<text x="868" y="514" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">and _LOADED_AT</text>
+<line x1="956" y1="293" x2="956" y2="313" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="956" y1="385" x2="956" y2="405" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="800" y1="300" x2="856" y2="250" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="1128" y="205" width="272" height="118" rx="9" fill="#ffffff" stroke="#7B52C4" stroke-width="1.4"/>
+<text x="1140" y="227" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">Staging (views)</text>
+<text x="1140" y="246" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">stg_claims, stg_providers,</text>
+<text x="1140" y="263" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">stg_members, stg_claim_keys</text>
+<text x="1140" y="280" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">keep the latest version per key</text>
+<text x="1140" y="297" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">(QUALIFY row_number), renamed</text>
+<rect x="1128" y="345" width="272" height="92" rx="9" fill="#ffffff" stroke="#7B52C4" stroke-width="1.4"/>
+<text x="1140" y="367" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">Snapshots (SCD Type 2)</text>
+<text x="1140" y="386" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">snap_members, snap_providers</text>
+<text x="1140" y="403" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">valid_from / valid_to history</text>
+<rect x="1128" y="459" width="272" height="190" rx="9" fill="#ffffff" stroke="#7B52C4" stroke-width="1.4"/>
+<text x="1140" y="481" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">Marts (tables)</text>
+<text x="1140" y="500" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">dim_date</text>
+<text x="1140" y="517" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">dim_member, dim_provider (current)</text>
+<text x="1140" y="534" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">dim_member_history,</text>
+<text x="1140" y="551" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">dim_provider_history</text>
+<text x="1140" y="568" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">fct_claims, one row per claim:</text>
+<text x="1140" y="585" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">  point-in-time join to history</text>
+<text x="1140" y="602" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">  is_deleted from the key list</text>
+<text x="1140" y="619" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">tests on every layer</text>
+<line x1="1056" y1="467" x2="1128" y2="262" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="1264" y1="323" x2="1264" y2="345" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="1264" y1="437" x2="1264" y2="459" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="1128" y="692" width="272" height="56" rx="9" fill="#ffffff" stroke="#7B52C4" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="1140" y="714" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="start">Consumers (planned)</text>
+<text x="1140" y="733" font-size="12" font-weight="400" fill="#5b6472" text-anchor="start">BI tools, analysts, SQL</text>
+<line x1="1264" y1="670" x2="1264" y2="692" stroke="#4b5563" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+<text x="24" y="706" font-size="13" font-weight="700" fill="#1f2937" text-anchor="start">Incremental logic</text>
+<text x="24" y="726" font-size="12.5" font-weight="400" fill="#5b6472" text-anchor="start">Changed rows: ROWVERSION watermark.  Deleted rows: key-list comparison.</text>
+<text x="24" y="745" font-size="12.5" font-weight="400" fill="#5b6472" text-anchor="start">History: raw keeps every version; snapshots keep dimension history.</text>
+</svg>

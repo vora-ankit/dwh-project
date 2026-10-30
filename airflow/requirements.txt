@@ -1,0 +1,7 @@
+# Python packages for the extract scripts and the load task (installed into Airflow's Python).
+# dbt is NOT listed here: it lives in its own virtual environment (see dockerfile_additions.txt).
+pyodbc
+python-dotenv
+azure-storage-blob
+pyarrow
+snowflake-connector-python

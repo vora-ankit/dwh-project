@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_providers
+    columns:
+      - name: provider_id
+        data_tests: [unique, not_null]
+      - name: network_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['IN', 'OUT']
+
+  - name: stg_members
+    columns:
+      - name: member_id
+        data_tests: [unique, not_null]
+      - name: plan_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['HMO', 'PPO', 'EPO', 'HDHP']

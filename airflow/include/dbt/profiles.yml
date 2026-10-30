@@ -1,0 +1,27 @@
+# dbt profile for the Airflow container and for CI. No secrets in this file:
+# every value comes from environment variables (Astro .env locally, GitHub secrets in CI).
+#   target dev -> schema ANALYTICS (used by the Airflow DAG)
+#   target ci  -> a throwaway schema per CI run (dbt build --target ci)
+claims_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'SYSADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database: CLAIMS_DWH
+      schema: ANALYTICS
+      threads: 4
+    ci:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'SYSADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database: CLAIMS_DWH
+      schema: "{{ env_var('DBT_CI_SCHEMA', 'CI_LOCAL') }}"
+      threads: 4

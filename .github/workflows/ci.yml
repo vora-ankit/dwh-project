@@ -1,0 +1,52 @@
+# CI for the claims data warehouse.
+# On every pull request (and on demand from the Actions tab):
+#   1. python-checks: every Python file in the repo compiles
+#   2. dbt: build all models, snapshots and tests into a throwaway Snowflake schema,
+#      then drop that schema. RAW and ANALYTICS are only read, never written.
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile all Python files
+        run: python -m compileall -q source airflow/dags airflow/include/scripts
+
+  dbt:
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      DBT_CI_SCHEMA: CI_${{ github.run_id }}
+    defaults:
+      run:
+        working-directory: airflow/include/dbt/claims_dbt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dbt
+        run: pip install "dbt-core==1.12.6" dbt-snowflake
+      - name: dbt parse
+        run: dbt parse --profiles-dir .. --target ci
+      - name: dbt build
+        run: dbt build --profiles-dir .. --target ci
+      - name: Drop the CI schema
+        if: always()
+        run: dbt run-operation drop_ci_schema --profiles-dir .. --target ci

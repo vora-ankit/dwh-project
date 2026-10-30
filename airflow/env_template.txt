@@ -1,0 +1,20 @@
+# Copy these lines into airflow\.env and fill in your real values.
+# One line each, no quotes, no spaces around "=".
+# Never commit .env to Git.
+
+# Azure SQL (read-only pipeline login)
+AZSQL_SERVER=yourserver.database.windows.net
+AZSQL_DATABASE=SnowDB
+AZSQL_USER=pipeline_user
+AZSQL_PASSWORD=your_password
+
+# Azure Blob
+AZ_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net
+AZ_CONTAINER=raw
+
+# Snowflake (used by the load task and by dbt)
+SNOWFLAKE_ACCOUNT=yourorg-youraccount
+SNOWFLAKE_USER=your_snowflake_user
+SNOWFLAKE_PASSWORD=your_snowflake_password
+SNOWFLAKE_ROLE=SYSADMIN
+SNOWFLAKE_WAREHOUSE=your_warehouse

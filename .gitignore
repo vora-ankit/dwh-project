@@ -1,0 +1,23 @@
+# ---- Secrets: never commit these ----
+.env
+**/.env
+airflow/airflow_settings.yaml
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ---- dbt build output ----
+**/target/
+**/logs/
+**/dbt_packages/
+
+# ---- Airflow / Astro local files ----
+airflow/.astro/
+
+# ---- Local artefacts ----
+*.log
+*.parquet
+*.bak

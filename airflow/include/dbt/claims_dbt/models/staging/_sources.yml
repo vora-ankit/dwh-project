@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw
+    database: CLAIMS_DWH
+    schema: RAW
+    tables:
+      - name: claims
+      - name: providers
+      - name: members
+      - name: claim_keys
