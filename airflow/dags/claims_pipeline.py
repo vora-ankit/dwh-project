@@ -31,7 +31,7 @@ default_args = {
 
 @dag(
     dag_id="claims_pipeline",
-    schedule="@daily",
+    schedule=None,
     start_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
     catchup=False,          # do not run once for every missed day since start_date
     max_active_runs=1,      # two overlapping runs would race on the same watermarks
