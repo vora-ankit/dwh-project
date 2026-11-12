@@ -6,6 +6,11 @@ models:
       - name: provider_id
         data_tests: [unique, not_null]
       - name: is_in_network
+        data_tests:
+          - not_null:
+              config:
+                where: "not is_inferred"
+      - name: is_inferred
         data_tests: [not_null]
 
   - name: dim_member
@@ -16,6 +21,11 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: ['0-17', '18-34', '35-49', '50-64', '65+']
+                values: ['0-17', '18-34', '35-49', '50-64', '65+', 'Unknown']
       - name: is_active
+        data_tests:
+          - not_null:
+              config:
+                where: "not is_inferred"
+      - name: is_inferred
         data_tests: [not_null]
