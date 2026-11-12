@@ -1,7 +1,10 @@
-"""Capture the full list of current primary keys from the source and write it to Azure Blob.
+"""Capture the full list of current primary keys, with each row's rowversion, and write it to Azure Blob.
 
-Why: a rowversion watermark load never sees deleted rows. Comparing the latest key list with
-the warehouse is how deletes are detected (see the is_deleted flag in fct_claims).
+Why:
+  * Deletes: a rowversion watermark load never sees deleted rows. Comparing the latest key list with
+    the warehouse is how deletes are detected (see the is_deleted flag in fct_claims).
+  * Missed updates: each key carries its current rowversion, so the warehouse can check claim by
+    claim that it is not behind the source (dbt test assert_claims_not_behind_source).
 
 Usage (venv active, project folder):
     python extract_keys.py                 # claims
@@ -13,8 +16,8 @@ mistake. Captured afterwards, the worst case is a key whose row has not been ext
 which is harmless.
 
 Each run writes one file:  <name>_keys/captured_at=YYYYMMDDTHHMMSS/keys.parquet
-with columns <key> (int) and captured_at (UTC timestamp). Older captures are kept; dbt only
-reads the newest. At scale you would expire old captures with a storage lifecycle rule.
+with columns <key> (int), row_version (16-character hex string, same format as the row extract)
+and captured_at (UTC timestamp). Old captures are pruned in Snowflake after 7 days.
 
 Safety: an EMPTY key list is refused. If the source query ever returned nothing because of an
 outage or a permissions change, writing it would mark every row as deleted.
@@ -34,31 +37,35 @@ from extract_claims import connect
 
 load_dotenv()
 
-# name -> (source table, key column). Snowflake and dbt are only set up for claims so far.
+# name -> (source table, key column, rowversion column). Snowflake and dbt use claims only so far.
 KEY_TABLES = {
-    "claims":    ("dbo.Claims",    "ClaimID"),
-    "providers": ("dbo.Providers", "ProviderID"),
-    "members":   ("dbo.Members",   "MemberID"),
+    "claims":    ("dbo.Claims",    "ClaimID",    "LastActiveRowVersionNumber"),
+    "providers": ("dbo.Providers", "ProviderID", "RowVersionNumber"),
+    "members":   ("dbo.Members",   "MemberID",   "RowVersionNumber"),
 }
 
 
 def capture(conn, container, name, captured_at):
-    """Write the current key list for one table. Returns the number of keys."""
-    table, key = KEY_TABLES[name]
+    """Write the current key list, with each row's rowversion, for one table. Returns the number of keys."""
+    table, key, version_col = KEY_TABLES[name]
     cur = conn.cursor()
-    cur.execute(f"SELECT {key} FROM {table}")
-    ids = []
+    cur.execute(f"SELECT {key}, {version_col} FROM {table}")
+    ids, versions = [], []
     while True:
         rows = cur.fetchmany(100000)
         if not rows:
             break
-        ids.extend(row[0] for row in rows)
+        for row in rows:
+            ids.append(row[0])
+            # rowversion arrives as 8 bytes; store it as hex, exactly like the row extract does
+            versions.append(bytes(row[1]).hex())
 
     if not ids:
         raise RuntimeError(f"{table} returned no keys; refusing to write an empty key list")
 
     arrow_table = pa.table({
         key.lower(): pa.array(ids, type=pa.int64()),
+        "row_version": pa.array(versions, type=pa.string()),
         "captured_at": pa.array([captured_at] * len(ids), type=pa.timestamp("us")),
     })
     blob_name = f"{name}_keys/captured_at={captured_at:%Y%m%dT%H%M%S}/keys.parquet"
@@ -71,7 +78,7 @@ def capture(conn, container, name, captured_at):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Capture current primary keys to Azure Blob")
+    parser = argparse.ArgumentParser(description="Capture current primary keys and rowversions to Azure Blob")
     parser.add_argument("tables", nargs="*", help=f"any of: {', '.join(KEY_TABLES)} (default: claims)")
     args = parser.parse_args()
 
