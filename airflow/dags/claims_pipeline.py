@@ -3,6 +3,7 @@
 Task order (each step is safe to rerun, which is what makes retries safe):
     extract_rows       new and changed rows since each table's watermark   (extract_tables.py)
     extract_keys       full list of current claim IDs, AFTER the rows       (extract_keys.py)
+    check_schema       stop before loading if the source gained a column    (check_schema.py)
     load_raw           COPY INTO the RAW tables; already-loaded files skip  (include/sql/load_raw.sql)
     source_freshness   did the load land? claim_keys must be recent         (dbt source freshness)
     dbt_build          snapshots, models and tests in dependency order      (dbt build)
@@ -80,6 +81,15 @@ def claims_pipeline():
         retry_delay=timedelta(minutes=3),
     )
 
+    # A new source column would be silently dropped by COPY INTO. Failing here leaves the new files
+    # unloaded in Blob; after ALTER TABLE ... ADD COLUMN, clearing this task loads them with the column.
+    check_schema = BashOperator(
+        task_id="check_schema",
+        bash_command=f"cd {SCRIPTS} && python check_schema.py",
+        retries=1,
+        retry_delay=timedelta(minutes=2),
+    )
+
     @task(retries=2, retry_delay=timedelta(minutes=2))
     def load_raw():
         """COPY INTO the raw tables. Snowflake skips files it already loaded."""
@@ -102,7 +112,8 @@ def claims_pipeline():
         """Keep 7 days of key captures. Runs only after a successful dbt_build."""
         run_snowflake_sql("prune_claim_keys.sql")
 
-    extract_rows >> extract_keys >> load_raw() >> source_freshness >> dbt_build >> prune_claim_keys()
+    (extract_rows >> extract_keys >> check_schema >> load_raw()
+     >> source_freshness >> dbt_build >> prune_claim_keys())
 
 
 claims_pipeline()
