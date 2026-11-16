@@ -12,11 +12,15 @@ Runs in the DAG AFTER the extracts and BEFORE load_raw:
 
 Pipeline-only columns in raw (_SOURCE_FILE, _FILE_ROW, _LOADED_AT) are ignored.
 
+The last line printed is always 'SCHEMA_WARNINGS: [...]' (JSON). Airflow keeps a BashOperator's last
+output line as its XCom, which the report_warnings task reads to include warnings in the Slack alert.
+
 Usage:  python check_schema.py            (all tables in extract_tables.TABLES)
         python check_schema.py claims     (selected tables)
 Needs the AZSQL_* and SNOWFLAKE_* environment variables (Airflow's .env has both).
 """
 import argparse
+import json
 import os
 import sys
 
@@ -75,8 +79,9 @@ def snowflake_connect():
 
 
 def check(names, azure_conn, snowflake_conn):
-    """Print a report for each table. Returns True if the load can go ahead."""
+    """Print a report for each table. Returns (ok, warnings): ok is True if the load can go ahead."""
     ok = True
+    warnings = []
     for name in names:
         src_table, raw_table = TABLES[name]
         src = source_columns(azure_conn, src_table)
@@ -96,10 +101,12 @@ def check(names, azure_conn, snowflake_conn):
             for col in added:
                 print(f"         fix: ALTER TABLE CLAIMS_DWH.RAW.{raw_table} ADD COLUMN {col} <type>;")
         if removed:
-            print(f"[{name}] WARNING: column(s) no longer in dbo.{src_table}, will load as NULL: {', '.join(removed)}")
+            message = f"column(s) no longer in dbo.{src_table}, will load as NULL: {', '.join(removed)}"
+            print(f"[{name}] WARNING: {message}")
+            warnings.append(f"{name}: {message}")
         if not added and not removed:
             print(f"[{name}] OK: {len(src)} source columns all present in RAW.{raw_table}")
-    return ok
+    return ok, warnings
 
 
 def main():
@@ -115,11 +122,13 @@ def main():
     with connect() as azure_conn:
         sf = snowflake_connect()
         try:
-            ok = check(names, azure_conn, sf)
+            ok, warnings = check(names, azure_conn, sf)
         finally:
             sf.close()
+    print("SCHEMA_WARNINGS: " + json.dumps(warnings))   # keep this the LAST line printed
     if not ok:
-        print("Schema check failed: load_raw will not run. New files stay in Blob until the raw table is fixed.")
+        print("Schema check failed: load_raw will not run. New files stay in Blob until the raw table is fixed.",
+              file=sys.stderr)
         sys.exit(1)
 
 

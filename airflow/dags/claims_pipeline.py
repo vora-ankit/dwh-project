@@ -8,6 +8,9 @@ Task order (each step is safe to rerun, which is what makes retries safe):
     source_freshness   did the load land? claim_keys must be recent         (dbt source freshness)
     dbt_build          snapshots, models and tests in dependency order      (dbt build)
     prune_claim_keys   keep 7 days of key captures in RAW.CLAIM_KEYS        (include/sql/prune_claim_keys.sql)
+    report_warnings    Slack message if the run succeeded but with warnings (dbt + schema check)
+
+Alerting: any task that fails after its last retry posts to Slack (on_failure_callback in default_args).
 
 Credentials come from environment variables set in the Astro project's .env file.
 """
@@ -17,6 +20,8 @@ import os
 
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import dag, task
+
+from alerting import parse_dbt_warnings, parse_schema_warnings, send_slack, task_failure_alert, warnings_message
 
 AIRFLOW_HOME = Path("/usr/local/airflow")
 SCRIPTS = AIRFLOW_HOME / "include" / "scripts"
@@ -29,6 +34,7 @@ default_args = {
     "owner": "ankit",
     "retries": 1,
     "retry_delay": timedelta(minutes=2),
+    "on_failure_callback": task_failure_alert,   # fires once, after the last retry
 }
 
 
@@ -107,13 +113,25 @@ def claims_pipeline():
         retries=0,   # a failing test should stop the run and be looked at, not retried
     )
 
+    @task
+    def report_warnings(**context):
+        """Runs only if everything before it succeeded. Sends one Slack message if there were warnings."""
+        ti = context["ti"]
+        warnings = parse_schema_warnings(ti.xcom_pull(task_ids="check_schema"))
+        warnings += parse_dbt_warnings(DBT_PROJECT / "target" / "run_results.json",
+                                       DBT_PROJECT / "target" / "sources.json")
+        if warnings:
+            send_slack(warnings_message(ti.dag_id, ti.run_id, warnings))
+        else:
+            print("No warnings: nothing sent.")
+
     @task(retries=2, retry_delay=timedelta(minutes=2))
     def prune_claim_keys():
         """Keep 7 days of key captures. Runs only after a successful dbt_build."""
         run_snowflake_sql("prune_claim_keys.sql")
 
     (extract_rows >> extract_keys >> check_schema >> load_raw()
-     >> source_freshness >> dbt_build >> prune_claim_keys())
+     >> source_freshness >> dbt_build >> prune_claim_keys() >> report_warnings())
 
 
 claims_pipeline()

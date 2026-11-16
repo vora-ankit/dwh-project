@@ -18,3 +18,5 @@ SNOWFLAKE_USER=your_snowflake_user
 SNOWFLAKE_PASSWORD=your_snowflake_password
 SNOWFLAKE_ROLE=SYSADMIN
 SNOWFLAKE_WAREHOUSE=your_warehouse
+
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/url
